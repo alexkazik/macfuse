@@ -79,7 +79,10 @@ GM_EXPORT NSString* const kGMUserFileSystemFileFlagsKey = @"kGMUserFileSystemFil
 GM_EXPORT NSString* const kGMUserFileSystemFileAccessDateKey = @"kGMUserFileSystemFileAccessDateKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileChangeDateKey = @"kGMUserFileSystemFileChangeDateKey";
 GM_EXPORT NSString* const kGMUserFileSystemFileBackupDateKey = @"kGMUserFileSystemFileBackupDateKey";
+GM_EXPORT NSString* const kGMUserFileSystemFileSizeInBlocksKey = @"kGMUserFileSystemFileSizeInBlocksKey";
 GM_EXPORT NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey = @"kGMUserFileSystemVolumeSupportsExtendedDatesKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey = @"kGMUserFileSystemVolumeMaxFilenameLengthKey";
+GM_EXPORT NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey = @"kGMUserFileSystemVolumeFileSystemBlockSizeKey";
 
 // TODO: Remove comment on EXPORT if/when setvolname is supported.
 /* GM_EXPORT */ NSString* const kGMUserFileSystemVolumeSupportsSetVolumeNameKey = @"kGMUserFileSystemVolumeSupportsSetVolumeNameKey";
@@ -701,12 +704,14 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   }
   
   // Maximum length of filenames
-  // TODO: Create our own key so that a fileSystem can override this.
-  stbuf->f_namemax = 255;
+  NSNumber* namemax = [attributes objectForKey:kGMUserFileSystemVolumeMaxFilenameLengthKey];
+  assert(namemax);
+  stbuf->f_namemax = (unsigned long) [namemax longLongValue];
   
   // Block size
-  // TODO: Create our own key so that a fileSystem can override this.
-  stbuf->f_bsize = stbuf->f_frsize = 4096;
+  NSNumber* blocksize = [attributes objectForKey:kGMUserFileSystemVolumeFileSystemBlockSizeKey];
+  assert(blocksize);
+  stbuf->f_bsize = stbuf->f_frsize = (unsigned long) [blocksize longLongValue];
   
   // Size in blocks
   NSNumber* size = [attributes objectForKey:NSFileSystemSize];
@@ -837,20 +842,22 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
 #endif
 
   // Size for regular files.
-  // TODO: Revisit size for directories.
-  if (![fileType isEqualToString:NSFileTypeDirectory]) {
-    NSNumber* size = [attributes objectForKey:NSFileSize];
-    if (size) {
-      stbuf->st_size = [size longLongValue];
-    }
+  NSNumber* size = [attributes objectForKey:NSFileSize];
+  if (size) {
+    stbuf->st_size = [size longLongValue];
   }
 
   // Set the number of blocks used so that Finder will display size on disk 
   // properly. The man page says that this is in terms of 512 byte blocks.
-  if (stbuf->st_size > 0) {
-    stbuf->st_blocks = stbuf->st_size / 512;
-    if (stbuf->st_size % 512) {
-      ++(stbuf->st_blocks);
+  NSNumber* blocks = [attributes objectForKey:kGMUserFileSystemFileSizeInBlocksKey];
+  if (blocks) {
+    stbuf->st_blocks = [blocks longLongValue];
+  }else{
+    if (stbuf->st_size > 0) {
+      stbuf->st_blocks = stbuf->st_size / 512;
+      if (stbuf->st_size % 512) {
+        ++(stbuf->st_blocks);
+      }
     }
   }
 
@@ -1405,7 +1412,8 @@ static const int kWaitForMountUSleepInterval = 100000;  // 100 ms
   [attributes setObject:defaultSize forKey:NSFileSystemFreeSize];
   [attributes setObject:defaultSize forKey:NSFileSystemNodes];
   [attributes setObject:defaultSize forKey:NSFileSystemFreeNodes];
-  // TODO: NSFileSystemNumber? Or does fuse do that for us?
+  [attributes setObject:[NSNumber numberWithInt:255] forKey:kGMUserFileSystemVolumeMaxFilenameLengthKey];
+  [attributes setObject:[NSNumber numberWithInt:4096] forKey:kGMUserFileSystemVolumeFileSystemBlockSizeKey];
   
   // The delegate can override any of the above defaults by implementing the
   // attributesOfFileSystemForPath selector and returning a custom dictionary.

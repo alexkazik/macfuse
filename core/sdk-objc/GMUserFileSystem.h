@@ -682,6 +682,12 @@ extern NSString* const kGMUserFileSystemFileChangeDateKey;
  */
 extern NSString* const kGMUserFileSystemFileBackupDateKey;
 
+/*! 
+ * @abstract  For file size in 512 byte blocks. 
+ * @discussion The value should be an NSNumber that is the size in 512 byte blocks. 
+ */
+extern NSString* const kGMUserFileSystemFileSizeInBlocksKey;
+
 #pragma mark Additional Volume Attribute Keys
 
 /*! @group Additional Volume Attribute Keys */
@@ -692,6 +698,20 @@ extern NSString* const kGMUserFileSystemFileBackupDateKey;
  * not the file system supports extended dates such as creation and backup dates.
  */
 extern NSString* const kGMUserFileSystemVolumeSupportsExtendedDatesKey;
+
+/*! 
+ * @abstract Specifies the maximum filename length.
+ * @discussion The value should be a integer NSNumber with the
+ * maximum filename length, is omitted 255 is assumed.
+ */
+extern NSString* const kGMUserFileSystemVolumeMaxFilenameLengthKey;
+
+/*! 
+ * @abstract Specifies the File system block size.
+ * @discussion The value should be a integer NSNumber with the 
+ * file system block size, if omitted 4096 is assumed.
+ */
+extern NSString* const kGMUserFileSystemVolumeFileSystemBlockSizeKey;
 
 #pragma mark Additional Finder and Resource Fork keys
 
